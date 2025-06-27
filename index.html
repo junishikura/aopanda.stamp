@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>あおぱんだスタンプ人気ランキング投票</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <img src="images/商標logo.png" alt="あおぱんだ商標ロゴ" class="trademark-logo">
+            </div>
+            <h1>🐼 あおぱんだスタンプ人気ランキング 🐼</h1>
+            <p class="subtitle">あなたのお気に入りのあおぱんだスタンプに投票しよう！</p>
+        </header>
+        
+        <main>
+            <div class="poll-container">
+                <h2 id="poll-question">好きなあおぱんだスタンプを2つまで選んでください</h2>
+                <div class="vote-counter">
+                    残り投票数: <span id="remaining-votes">2</span>票
+                </div>
+                
+                <div class="options-container" id="options-container">
+                    <!-- スタンプオプションはJavaScriptで動的に生成 -->
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="vote-btn" class="btn primary">投票する</button>
+                    <button id="admin-btn" class="btn admin" style="display: none;">管理者メニュー</button>
+                </div>
+                
+                <div id="admin-panel" class="admin-panel" style="display: none;">
+                    <h3>管理者パネル</h3>
+                    <div class="admin-buttons">
+                        <button id="show-results-btn" class="btn secondary">結果を表示</button>
+                        <button id="reset-btn" class="btn danger">投票データリセット</button>
+                        <button id="close-admin-btn" class="btn secondary">閉じる</button>
+                    </div>
+                </div>
+                
+                <div class="total-votes">
+                    総投票数: <span id="total-count">0</span>票
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

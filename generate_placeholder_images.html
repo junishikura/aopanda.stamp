@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>プレースホルダー画像生成</title>
+</head>
+<body>
+    <h1>プレースホルダー画像生成中...</h1>
+    <div id="status"></div>
+    
+    <script>
+        const stamps = [
+            { id: 'stamp1', name: 'ハッピーあおぱんだ', emoji: '😊', color: '#FFE4B5' },
+            { id: 'stamp2', name: 'おやすみあおぱんだ', emoji: '😴', color: '#E6E6FA' },
+            { id: 'stamp3', name: 'テンション高めあおぱんだ', emoji: '🤩', color: '#FFB6C1' },
+            { id: 'stamp4', name: '考え中あおぱんだ', emoji: '🤔', color: '#F0E68C' },
+            { id: 'stamp5', name: 'ラブラブあおぱんだ', emoji: '😍', color: '#FFB6C1' },
+            { id: 'stamp6', name: '泣いてるあおぱんだ', emoji: '😭', color: '#87CEEB' },
+            { id: 'stamp7', name: '怒ってるあおぱんだ', emoji: '😠', color: '#FFA07A' },
+            { id: 'stamp8', name: 'びっくりあおぱんだ', emoji: '😲', color: '#FFFFE0' },
+            { id: 'stamp9', name: 'ウインクあおぱんだ', emoji: '😉', color: '#F5DEB3' },
+            { id: 'stamp10', name: '照れあおぱんだ', emoji: '😊', color: '#FFEFD5' },
+            { id: 'stamp11', name: 'がんばるあおぱんだ', emoji: '💪', color: '#F0F8FF' },
+            { id: 'stamp12', name: 'おめでとうあおぱんだ', emoji: '🎉', color: '#FFFACD' },
+            { id: 'stamp13', name: 'ありがとうあおぱんだ', emoji: '🙏', color: '#F5F5DC' },
+            { id: 'stamp14', name: 'ごめんなさいあおぱんだ', emoji: '🙇', color: '#E0E0E0' },
+            { id: 'stamp15', name: 'おつかれさまあおぱんだ', emoji: '😌', color: '#F0FFFF' },
+            { id: 'stamp16', name: 'いただきますあおぱんだ', emoji: '🍽️', color: '#FFF8DC' },
+            { id: 'stamp17', name: 'ごちそうさまあおぱんだ', emoji: '😋', color: '#FFFAF0' },
+            { id: 'stamp18', name: 'おはようあおぱんだ', emoji: '🌅', color: '#FFE4E1' },
+            { id: 'stamp19', name: 'こんにちはあおぱんだ', emoji: '👋', color: '#F0F8FF' },
+            { id: 'stamp20', name: 'こんばんはあおぱんだ', emoji: '🌙', color: '#191970' },
+            { id: 'stamp21', name: 'お疲れ様あおぱんだ', emoji: '😪', color: '#E6E6FA' },
+            { id: 'stamp22', name: 'いってきますあおぱんだ', emoji: '🚪', color: '#F5F5F5' },
+            { id: 'stamp23', name: 'ただいまあおぱんだ', emoji: '🏠', color: '#FFFACD' },
+            { id: 'stamp24', name: 'いってらっしゃいあおぱんだ', emoji: '👋', color: '#F0E68C' },
+            { id: 'stamp25', name: 'おかえりあおぱんだ', emoji: '🤗', color: '#FFE4B5' },
+            { id: 'stamp26', name: 'がんばってあおぱんだ', emoji: '📣', color: '#FF6347' },
+            { id: 'stamp27', name: 'お疲れさまあおぱんだ', emoji: '🍵', color: '#F5DEB3' },
+            { id: 'stamp28', name: 'よろしくあおぱんだ', emoji: '🤝', color: '#F0F8FF' },
+            { id: 'stamp29', name: 'すみませんあおぱんだ', emoji: '🙏', color: '#E0E0E0' },
+            { id: 'stamp30', name: 'うれしいあおぱんだ', emoji: '🥰', color: '#FFB6C1' },
+            { id: 'stamp31', name: 'かなしいあおぱんだ', emoji: '😢', color: '#87CEEB' },
+            { id: 'stamp32', name: 'たのしいあおぱんだ', emoji: '😄', color: '#FFFFE0' },
+            { id: 'stamp33', name: 'びっくりあおぱんだ', emoji: '😱', color: '#F0FFFF' },
+            { id: 'stamp34', name: 'こまったあおぱんだ', emoji: '😵', color: '#E6E6FA' },
+            { id: 'stamp35', name: 'つかれたあおぱんだ', emoji: '😴', color: '#D3D3D3' },
+            { id: 'stamp36', name: 'げんきあおぱんだ', emoji: '💪', color: '#98FB98' },
+            { id: 'stamp37', name: 'やったーあおぱんだ', emoji: '🙌', color: '#FFD700' },
+            { id: 'stamp38', name: 'えーんあおぱんだ', emoji: '😭', color: '#87CEEB' },
+            { id: 'stamp39', name: 'むむむあおぱんだ', emoji: '🤨', color: '#DDA0DD' },
+            { id: 'stamp40', name: 'ぽかーんあおぱんだ', emoji: '😐', color: '#F5F5F5' },
+            { id: 'stamp41', name: 'きゃーあおぱんだ', emoji: '😆', color: '#FFB6C1' },
+            { id: 'stamp42', name: 'ほっこりあおぱんだ', emoji: '☺️', color: '#FFEFD5' }
+        ];
+
+        function createPlaceholderImage(stamp, index) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // 背景色
+            ctx.fillStyle = stamp.color;
+            ctx.fillRect(0, 0, 128, 128);
+            
+            // 境界線
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, 128, 128);
+            
+            // 絵文字
+            ctx.font = '40px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#333';
+            ctx.fillText(stamp.emoji, 64, 50);
+            
+            // 番号
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#333';
+            ctx.fillText(`#${index + 1}`, 64, 80);
+            
+            // 名前（短縮版）
+            ctx.font = '10px Arial';
+            const shortName = stamp.name.replace('あおぱんだ', '');
+            ctx.fillText(shortName, 64, 100);
+            
+            return canvas.toDataURL('image/png');
+        }
+
+        function downloadImage(dataURL, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataURL;
+            link.click();
+        }
+
+        function generateAllImages() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>画像生成中...</p>';
+            
+            stamps.forEach((stamp, index) => {
+                setTimeout(() => {
+                    const dataURL = createPlaceholderImage(stamp, index);
+                    downloadImage(dataURL, `${stamp.id}.png`);
+                    status.innerHTML += `<p>${stamp.id}.png 生成完了</p>`;
+                    
+                    if (index === stamps.length - 1) {
+                        status.innerHTML += '<p><strong>すべての画像生成が完了しました！</strong></p>';
+                        status.innerHTML += '<p>ダウンロードした画像をimages/stamps/フォルダに移動してください。</p>';
+                    }
+                }, index * 200);
+            });
+        }
+
+        // ページ読み込み時に実行
+        window.onload = generateAllImages;
+    </script>
+</body>
+</html>
