@@ -302,7 +302,10 @@ class VotingSystem {
         this.isAdmin = !this.isAdmin;
         if (this.isAdmin) {
             this.adminBtn.style.display = 'inline-block';
-            alert('管理者モードが有効になりました');
+            // デバッグ用：現在の投票データを表示
+            console.log('現在の投票データ:', this.votes);
+            console.log('総投票数:', this.totalVotes);
+            alert(`管理者モードが有効になりました\n現在の総投票数: ${this.totalVotes}票`);
         } else {
             this.adminBtn.style.display = 'none';
             this.adminPanel.style.display = 'none';
