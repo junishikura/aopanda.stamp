@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>あおぱんだスタンプ人気ランキング投票</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chart-styles.css">
 </head>
 <body>
     <!-- 装飾用あおぱんだGIF -->
@@ -48,8 +50,35 @@
                     <h3>管理者パネル</h3>
                     <div class="admin-buttons">
                         <button id="show-results-btn" class="btn secondary">結果を表示</button>
+                        <button id="show-chart-btn" class="btn secondary">グラフ表示</button>
                         <button id="reset-btn" class="btn danger">投票データリセット</button>
                         <button id="close-admin-btn" class="btn secondary">閉じる</button>
+                    </div>
+                </div>
+                
+                <!-- グラフ表示エリア -->
+                <div id="chart-container" class="chart-container" style="display: none;">
+                    <h3>📊 投票結果グラフ</h3>
+                    <div class="chart-tabs">
+                        <button id="bar-chart-btn" class="chart-tab active">棒グラフ</button>
+                        <button id="pie-chart-btn" class="chart-tab">円グラフ</button>
+                        <button id="ranking-btn" class="chart-tab">ランキング</button>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="results-chart"></canvas>
+                    </div>
+                    <div id="ranking-table" class="ranking-table" style="display: none;"></div>
+                    <button id="close-chart-btn" class="btn secondary">グラフを閉じる</button>
+                </div>
+                
+                <!-- シェアボタン -->
+                <div id="share-section" class="share-section" style="display: none;">
+                    <h3>🎉 投票完了！</h3>
+                    <p>結果をシェアして他の人にも投票を呼びかけよう！</p>
+                    <div class="share-buttons">
+                        <button id="share-twitter" class="btn share twitter">𝕏でシェア</button>
+                        <button id="share-native" class="btn share native" style="display: none;">シェア</button>
+                        <button id="copy-url" class="btn share copy">URLをコピー</button>
                     </div>
                 </div>
                 

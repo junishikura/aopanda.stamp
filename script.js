@@ -57,6 +57,8 @@ class VotingSystem {
         this.hasVoted = false;
         this.showingResults = false;
         this.isAdmin = false;
+        this.sessionId = this.generateSessionId();
+        this.userFingerprint = this.generateUserFingerprint();
         
         this.init();
         this.generateStampOptions();
@@ -67,6 +69,7 @@ class VotingSystem {
         this.voteBtn = document.getElementById('vote-btn');
         this.adminBtn = document.getElementById('admin-btn');
         this.showResultsBtn = document.getElementById('show-results-btn');
+        this.showChartBtn = document.getElementById('show-chart-btn');
         this.resetBtn = document.getElementById('reset-btn');
         this.closeAdminBtn = document.getElementById('close-admin-btn');
         this.totalCountElement = document.getElementById('total-count');
@@ -74,12 +77,42 @@ class VotingSystem {
         this.pollContainer = document.querySelector('.poll-container');
         this.optionsContainer = document.getElementById('options-container');
         this.adminPanel = document.getElementById('admin-panel');
+        this.chartContainer = document.getElementById('chart-container');
+        this.shareSection = document.getElementById('share-section');
+        
+        // グラフとシェア関連
+        this.barChartBtn = document.getElementById('bar-chart-btn');
+        this.pieChartBtn = document.getElementById('pie-chart-btn');
+        this.rankingBtn = document.getElementById('ranking-btn');
+        this.closeChartBtn = document.getElementById('close-chart-btn');
+        this.shareTwitterBtn = document.getElementById('share-twitter');
+        this.shareNativeBtn = document.getElementById('share-native');
+        this.copyUrlBtn = document.getElementById('copy-url');
+        
+        this.currentChart = null;
+        
+        // Web Share API対応チェック
+        if (navigator.share) {
+            this.shareNativeBtn.style.display = 'inline-block';
+        }
         
         this.voteBtn.addEventListener('click', () => this.vote());
         this.adminBtn.addEventListener('click', () => this.toggleAdminPanel());
         this.showResultsBtn.addEventListener('click', () => this.showResults());
+        this.showChartBtn.addEventListener('click', () => this.showChart());
         this.resetBtn.addEventListener('click', () => this.resetPoll());
         this.closeAdminBtn.addEventListener('click', () => this.closeAdminPanel());
+        
+        // グラフボタンのイベントリスナー
+        this.barChartBtn.addEventListener('click', () => this.showBarChart());
+        this.pieChartBtn.addEventListener('click', () => this.showPieChart());
+        this.rankingBtn.addEventListener('click', () => this.showRankingTable());
+        this.closeChartBtn.addEventListener('click', () => this.hideChart());
+        
+        // シェアボタンのイベントリスナー
+        this.shareTwitterBtn.addEventListener('click', () => this.shareOnTwitter());
+        this.shareNativeBtn.addEventListener('click', () => this.shareNative());
+        this.copyUrlBtn.addEventListener('click', () => this.copyUrl());
         
         // 管理者モード切り替え（Ctrl+Shift+A）
         document.addEventListener('keydown', (e) => {
@@ -127,6 +160,26 @@ class VotingSystem {
         const savedVotes = localStorage.getItem('pollVotes');
         const savedTotal = localStorage.getItem('pollTotal');
         const savedHasVoted = localStorage.getItem('hasVoted');
+        const savedFingerprint = localStorage.getItem('userFingerprint');
+        const voteTimestamp = localStorage.getItem('voteTimestamp');
+        
+        // 重複投票チェック
+        if (savedFingerprint && savedFingerprint !== this.userFingerprint) {
+            console.warn('Different user fingerprint detected');
+        }
+        
+        // 24時間経過チェック
+        if (voteTimestamp) {
+            const timeDiff = Date.now() - parseInt(voteTimestamp);
+            const hoursPassed = timeDiff / (1000 * 60 * 60);
+            if (hoursPassed > 24) {
+                // 24時間経過したら再投票可能
+                localStorage.removeItem('hasVoted');
+                localStorage.removeItem('userFingerprint');
+                localStorage.removeItem('voteTimestamp');
+                console.log('Vote session expired - allowing new vote');
+            }
+        }
         
         if (savedVotes) {
             this.votes = JSON.parse(savedVotes);
@@ -136,7 +189,7 @@ class VotingSystem {
             this.totalVotes = parseInt(savedTotal);
         }
         
-        if (savedHasVoted === 'true') {
+        if (localStorage.getItem('hasVoted') === 'true') {
             this.hasVoted = true;
             this.votesRemaining = 0;
             this.voteBtn.textContent = '投票済み';
@@ -146,10 +199,36 @@ class VotingSystem {
         this.updateDisplay();
     }
     
+    generateSessionId() {
+        return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    }
+    
+    generateUserFingerprint() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('Fingerprint test', 2, 2);
+        
+        const fingerprint = {
+            screen: `${screen.width}x${screen.height}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language,
+            platform: navigator.platform,
+            canvas: canvas.toDataURL(),
+            userAgent: navigator.userAgent.substr(0, 100)
+        };
+        
+        return btoa(JSON.stringify(fingerprint)).substr(0, 32);
+    }
+    
     saveVotes() {
         localStorage.setItem('pollVotes', JSON.stringify(this.votes));
         localStorage.setItem('pollTotal', this.totalVotes.toString());
         localStorage.setItem('hasVoted', this.hasVoted.toString());
+        localStorage.setItem('userFingerprint', this.userFingerprint);
+        localStorage.setItem('sessionId', this.sessionId);
+        localStorage.setItem('voteTimestamp', Date.now().toString());
     }
     
     handleStampSelection(checkbox) {
@@ -212,6 +291,9 @@ class VotingSystem {
         this.saveVotes();
         this.updateDisplay();
         this.updateRemainingVotes();
+        
+        // 投票完了後にシェアセクションを表示
+        this.shareSection.style.display = 'block';
         
         alert(`投票完了！${this.selectedStamps.length}票を投票しました。`);
     }
@@ -320,6 +402,224 @@ class VotingSystem {
             this.updateDisplay();
             this.updateRemainingVotes();
             alert('投票データがリセットされました');
+        }
+    }
+    
+    // グラフ表示機能
+    showChart() {
+        if (!this.isAdmin) {
+            alert('グラフの表示は管理者のみ可能です');
+            return;
+        }
+        this.chartContainer.style.display = 'block';
+        this.showBarChart(); // デフォルトで棒グラフを表示
+    }
+    
+    hideChart() {
+        this.chartContainer.style.display = 'none';
+        if (this.currentChart) {
+            this.currentChart.destroy();
+            this.currentChart = null;
+        }
+    }
+    
+    showBarChart() {
+        this.setActiveTab('bar-chart-btn');
+        document.getElementById('ranking-table').style.display = 'none';
+        document.getElementById('results-chart').style.display = 'block';
+        
+        if (this.currentChart) {
+            this.currentChart.destroy();
+        }
+        
+        const ctx = document.getElementById('results-chart').getContext('2d');
+        const sortedData = this.getSortedVoteData();
+        
+        this.currentChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedData.map(item => item.name),
+                datasets: [{
+                    label: '投票数',
+                    data: sortedData.map(item => item.votes),
+                    backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutBounce'
+                }
+            }
+        });
+    }
+    
+    showPieChart() {
+        this.setActiveTab('pie-chart-btn');
+        document.getElementById('ranking-table').style.display = 'none';
+        document.getElementById('results-chart').style.display = 'block';
+        
+        if (this.currentChart) {
+            this.currentChart.destroy();
+        }
+        
+        const ctx = document.getElementById('results-chart').getContext('2d');
+        const sortedData = this.getSortedVoteData().slice(0, 10); // 上位10件のみ
+        
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+        ];
+        
+        this.currentChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: sortedData.map(item => item.name),
+                datasets: [{
+                    data: sortedData.map(item => item.votes),
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 10
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutBounce'
+                }
+            }
+        });
+    }
+    
+    showRankingTable() {
+        this.setActiveTab('ranking-btn');
+        document.getElementById('results-chart').style.display = 'none';
+        document.getElementById('ranking-table').style.display = 'block';
+        
+        if (this.currentChart) {
+            this.currentChart.destroy();
+            this.currentChart = null;
+        }
+        
+        const sortedData = this.getSortedVoteData();
+        const tableHtml = `
+            <h4>🏆 投票ランキング</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>順位</th>
+                        <th>スタンプ</th>
+                        <th>投票数</th>
+                        <th>割合</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedData.map((item, index) => `
+                        <tr class="rank-${index + 1}">
+                            <td class="rank">${index + 1}</td>
+                            <td class="stamp-name">${item.name}</td>
+                            <td class="votes">${item.votes}票</td>
+                            <td class="percentage">${this.calculatePercentage(item.votes)}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        
+        document.getElementById('ranking-table').innerHTML = tableHtml;
+    }
+    
+    getSortedVoteData() {
+        return this.stamps
+            .map(stamp => ({
+                name: stamp.name,
+                votes: this.votes[stamp.id] || 0
+            }))
+            .sort((a, b) => b.votes - a.votes);
+    }
+    
+    calculatePercentage(votes) {
+        return this.totalVotes > 0 ? Math.round((votes / this.totalVotes) * 100) : 0;
+    }
+    
+    setActiveTab(activeId) {
+        document.querySelectorAll('.chart-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.getElementById(activeId).classList.add('active');
+    }
+    
+    // シェア機能
+    shareOnTwitter() {
+        const text = 'あおぱんだスタンプ人気ランキングに投票しました！あなたも投票してみませんか？';
+        const url = window.location.href;
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        window.open(twitterUrl, '_blank');
+    }
+    
+    async shareNative() {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'あおぱんだスタンプ人気ランキング',
+                    text: 'あおぱんだスタンプの人気投票に参加しよう！',
+                    url: window.location.href
+                });
+            } catch (error) {
+                console.log('シェアがキャンセルされました');
+            }
+        }
+    }
+    
+    async copyUrl() {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            alert('URLをコピーしました！');
+        } catch (error) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = window.location.href;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('URLをコピーしました！');
         }
     }
 }
